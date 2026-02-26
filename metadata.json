@@ -1,0 +1,5 @@
+{
+  "name": "Sudpen Booking",
+  "description": "Appointment booking system for Sudpen prioritizing off-peak hours to manage customer flow.",
+  "requestFramePermissions": []
+}
