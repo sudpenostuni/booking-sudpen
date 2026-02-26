@@ -14,21 +14,57 @@ export default function App() {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch slots when date changes
-  useEffect(() => {
-    const fetchSlots = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/slots?date=${selectedDate}`);
-        const data = await res.json();
-        setSlots(data);
-      } catch (err) {
-        console.error("Failed to fetch slots", err);
-      } finally {
-        setLoading(false);
+  // Generate slots locally
+  const generateSlotsForDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+    
+    // Helper to generate slots
+    const generateTimeSlots = (startHour: number, startMinute: number, endHour: number, endMinute: number) => {
+      const slots: Slot[] = [];
+      let current = new Date(`2000-01-01T${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}:00`);
+      const end = new Date(`2000-01-01T${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}:00`);
+
+      while (current < end) {
+        const timeString = current.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+        const hour = current.getHours();
+        
+        // Traffic logic
+        let traffic: 'low' | 'medium' | 'high' = 'low';
+        
+        if (hour >= 8 && hour < 12) traffic = 'high';
+        else if (hour >= 12 && hour < 13) traffic = 'medium';
+        else if (hour >= 16 && hour < 18) traffic = 'high';
+        else if (hour >= 18 && hour < 19) traffic = 'medium';
+        else if (hour >= 19) traffic = 'low';
+
+        slots.push({ time: timeString, traffic, available: true });
+        current.setMinutes(current.getMinutes() + 30);
       }
+      return slots;
     };
-    fetchSlots();
+
+    // Sunday: Closed
+    if (dayOfWeek === 0) return [];
+    
+    // Saturday: Morning only (08:00 - 13:00)
+    if (dayOfWeek === 6) return generateTimeSlots(8, 0, 13, 0);
+    
+    // Mon-Fri: Morning (08:00 - 13:00) + Afternoon (16:30 - 20:00)
+    const morning = generateTimeSlots(8, 0, 13, 0);
+    const afternoon = generateTimeSlots(16, 30, 20, 0);
+    return [...morning, ...afternoon];
+  };
+
+  // Update slots when date changes
+  useEffect(() => {
+    setLoading(true);
+    // Simulate network delay for better UX
+    setTimeout(() => {
+      const generatedSlots = generateSlotsForDate(selectedDate);
+      setSlots(generatedSlots);
+      setLoading(false);
+    }, 300);
   }, [selectedDate]);
 
   const handleSlotClick = (slot: Slot) => {
