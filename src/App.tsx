@@ -70,7 +70,7 @@ export default function App() {
   const handleSlotClick = (slot: Slot) => {
     const dateObj = new Date(selectedDate);
     const dateStr = dateObj.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
-    const message = `prenotazione ritiro a partire dalle ore : ${slot.time} del ${dateStr}`;
+    const message = `RITIRO STAMPE\nORE ${slot.time} ( ${dateStr} )`;
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/3917972545?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
@@ -138,19 +138,67 @@ export default function App() {
       {/* Fixed Bottom Date Picker */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20">
         <div className="max-w-md mx-auto space-y-3">
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide ml-1">
-            Seleziona Data
-          </label>
-          <div className="relative">
-            <input 
-              type="date" 
-              value={selectedDate}
-              min={new Date().toISOString().split('T')[0]}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-xl text-lg font-medium focus:outline-none focus:ring-2 focus:ring-[#5A5A40] appearance-none"
-            />
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          <div className="flex items-center justify-between px-1">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Seleziona Data
+            </label>
+            <span className="text-xs font-medium text-[#5A5A40]">
+              {new Date(selectedDate).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long' })}
+            </span>
           </div>
+
+          <div className="grid grid-cols-[1fr_1fr_auto] gap-3">
+            <button 
+              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+              className={`py-3 px-4 rounded-xl font-medium text-sm transition-all ${
+                selectedDate === new Date().toISOString().split('T')[0]
+                  ? 'bg-[#5A5A40] text-white shadow-md' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Oggi
+            </button>
+            
+            <button 
+              onClick={() => {
+                const d = new Date();
+                d.setDate(d.getDate() + 1);
+                setSelectedDate(d.toISOString().split('T')[0]);
+              }}
+              className={`py-3 px-4 rounded-xl font-medium text-sm transition-all ${
+                selectedDate === (() => {
+                  const d = new Date();
+                  d.setDate(d.getDate() + 1);
+                  return d.toISOString().split('T')[0];
+                })()
+                  ? 'bg-[#5A5A40] text-white shadow-md' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Domani
+            </button>
+
+            <div className="relative">
+              <input 
+                type="date" 
+                value={selectedDate}
+                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <button 
+                className={`h-full aspect-square flex items-center justify-center rounded-xl transition-all ${
+                  selectedDate !== new Date().toISOString().split('T')[0] && 
+                  selectedDate !== (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })()
+                    ? 'bg-[#5A5A40] text-white shadow-md' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <Calendar size={20} />
+              </button>
+            </div>
+          </div>
+
           <div className="flex items-center justify-center gap-2 text-[10px] text-gray-400 pt-1">
             <Info size={12} />
             <p>Tocca un orario per prenotare su WhatsApp</p>
