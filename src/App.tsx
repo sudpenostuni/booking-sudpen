@@ -106,6 +106,7 @@ export default function App() {
   }, [selectedDate]);
 
   const handleSlotClick = (slot: Slot) => {
+    if (!slot.available) return;
     const dateObj = new Date(selectedDate);
     const dateStr = dateObj.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
     const message = `RITIRO STAMPE\nORE ${slot.time} ( ${dateStr} )`;
@@ -143,7 +144,8 @@ export default function App() {
             {slots.map((slot) => (
               <motion.button
                 key={slot.time}
-                whileTap={{ scale: 0.98 }}
+                disabled={!slot.available}
+                whileTap={slot.available ? { scale: 0.98 } : {}}
                 onClick={() => handleSlotClick(slot)}
                 className={`
                   relative p-4 rounded-xl border text-left transition-all shadow-sm flex flex-col justify-between h-24
