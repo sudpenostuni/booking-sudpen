@@ -10,15 +10,41 @@ interface Slot {
 }
 
 export default function App() {
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const getTodayString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getTomorrowString = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Generate slots locally
   const generateSlotsForDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    // Parse dateStr (YYYY-MM-DD) as local date to get correct day of week
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
     
+    const now = new Date();
+    const todayStr = getTodayString();
+    const isToday = dateStr === todayStr;
+    
+    // Cutoff time: now + 20 minutes
+    const cutoffTime = new Date(now.getTime() + 20 * 60000);
+
     // Helper to generate slots
     const generateTimeSlots = (startHour: number, startMinute: number, endHour: number, endMinute: number) => {
       const slots: Slot[] = [];
@@ -28,6 +54,7 @@ export default function App() {
       while (current < end) {
         const timeString = current.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
         const hour = current.getHours();
+        const minute = current.getMinutes();
         
         // Traffic logic
         let traffic: 'low' | 'medium' | 'high' = 'low';
@@ -38,7 +65,18 @@ export default function App() {
         else if (hour >= 18 && hour < 19) traffic = 'medium';
         else if (hour >= 19) traffic = 'low';
 
-        slots.push({ time: timeString, traffic, available: true });
+        let available = true;
+        
+        // 20-minute rule
+        if (isToday) {
+            const slotTime = new Date();
+            slotTime.setHours(hour, minute, 0, 0);
+            if (slotTime < cutoffTime) {
+                available = false;
+            }
+        }
+
+        slots.push({ time: timeString, traffic, available });
         current.setMinutes(current.getMinutes() + 30);
       }
       return slots;
@@ -149,9 +187,9 @@ export default function App() {
 
           <div className="grid grid-cols-[1fr_1fr_auto] gap-3">
             <button 
-              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+              onClick={() => setSelectedDate(getTodayString())}
               className={`py-3 px-4 rounded-xl font-medium text-sm transition-all ${
-                selectedDate === new Date().toISOString().split('T')[0]
+                selectedDate === getTodayString()
                   ? 'bg-[#5A5A40] text-white shadow-md' 
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
@@ -160,17 +198,9 @@ export default function App() {
             </button>
             
             <button 
-              onClick={() => {
-                const d = new Date();
-                d.setDate(d.getDate() + 1);
-                setSelectedDate(d.toISOString().split('T')[0]);
-              }}
+              onClick={() => setSelectedDate(getTomorrowString())}
               className={`py-3 px-4 rounded-xl font-medium text-sm transition-all ${
-                selectedDate === (() => {
-                  const d = new Date();
-                  d.setDate(d.getDate() + 1);
-                  return d.toISOString().split('T')[0];
-                })()
+                selectedDate === getTomorrowString()
                   ? 'bg-[#5A5A40] text-white shadow-md' 
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
@@ -182,14 +212,14 @@ export default function App() {
               <input 
                 type="date" 
                 value={selectedDate}
-                min={new Date().toISOString().split('T')[0]}
+                min={getTodayString()}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
               <button 
                 className={`h-full aspect-square flex items-center justify-center rounded-xl transition-all ${
-                  selectedDate !== new Date().toISOString().split('T')[0] && 
-                  selectedDate !== (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })()
+                  selectedDate !== getTodayString() && 
+                  selectedDate !== getTomorrowString()
                     ? 'bg-[#5A5A40] text-white shadow-md' 
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
