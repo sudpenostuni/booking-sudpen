@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar, Clock, Check, Loader2, Info, MessageCircle } from 'lucide-react';
+import { Analytics } from "@vercel/analytics/react";
 
 // Types
 interface Slot {
@@ -237,6 +238,7 @@ export default function App() {
           </div>
         </div>
       </div>
+      <Analytics />
     </div>
   );
 }
