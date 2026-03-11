@@ -31,6 +31,7 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sortByTraffic, setSortByTraffic] = useState(false);
 
   // Generate slots locally
   const generateSlotsForDate = (dateStr: string) => {
@@ -43,8 +44,8 @@ export default function App() {
     const todayStr = getTodayString();
     const isToday = dateStr === todayStr;
     
-    // Cutoff time: now + 20 minutes
-    const cutoffTime = new Date(now.getTime() + 20 * 60000);
+    // Cutoff time: now + 30 minutes
+    const cutoffTime = new Date(now.getTime() + 30 * 60000);
 
     // Helper to generate slots
     const generateTimeSlots = (startHour: number, startMinute: number, endHour: number, endMinute: number) => {
@@ -106,6 +107,8 @@ export default function App() {
     }, 300);
   }, [selectedDate]);
 
+  const recommendedSlots = slots.filter(s => s.available && s.traffic === 'low').slice(0, 3);
+
   const handleSlotClick = (slot: Slot) => {
     if (!slot.available) return;
     const dateObj = new Date(selectedDate);
@@ -126,11 +129,59 @@ export default function App() {
 
       <main className="flex-1 p-4 max-w-md mx-auto w-full pb-40">
         
+        {/* Off-Peak Promotion Banner */}
+        <div className="mb-6 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+          <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600">
+            <Clock size={20} />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-emerald-900">Evita la coda!</h3>
+            <p className="text-xs text-emerald-700 mt-0.5 leading-relaxed">
+              Prenota durante le <strong>ore tranquille</strong> per un servizio più rapido.
+            </p>
+          </div>
+        </div>
+
+        {/* Recommended Slots */}
+        {recommendedSlots.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between px-1 mb-3">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">Consigliati (Ore Tranquille)</h2>
+              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold uppercase">Priorità</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+              {recommendedSlots.map((slot) => (
+                <motion.button
+                  key={`rec-${slot.time}`}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleSlotClick(slot)}
+                  className="flex-shrink-0 w-32 bg-white border-2 border-emerald-500/20 p-4 rounded-2xl text-center shadow-sm hover:border-emerald-500/40 transition-all"
+                >
+                  <span className="block text-2xl font-bold text-emerald-900">{slot.time}</span>
+                  <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight">Tranquillo</span>
+                </motion.button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Slots Grid */}
         <div className="space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-lg font-serif font-semibold">Orari Disponibili</h2>
-            {loading && <Loader2 className="animate-spin text-[#5A5A40]" size={18} />}
+            <h2 className="text-lg font-serif font-semibold">Tutti gli Orari</h2>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setSortByTraffic(!sortByTraffic)}
+                className={`text-[10px] uppercase tracking-widest font-bold px-3 py-1.5 rounded-full transition-all border ${
+                  sortByTraffic 
+                    ? 'bg-emerald-600 text-white border-emerald-600' 
+                    : 'bg-white text-gray-400 border-gray-200'
+                }`}
+              >
+                {sortByTraffic ? 'Per Traffico' : 'Per Orario'}
+              </button>
+              {loading && <Loader2 className="animate-spin text-[#5A5A40]" size={18} />}
+            </div>
           </div>
 
           {!loading && slots.length === 0 && (
@@ -142,19 +193,28 @@ export default function App() {
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            {slots.map((slot) => (
-              <motion.button
-                key={slot.time}
-                disabled={!slot.available}
-                whileTap={slot.available ? { scale: 0.98 } : {}}
-                onClick={() => handleSlotClick(slot)}
-                className={`
-                  relative p-4 rounded-xl border text-left transition-all shadow-sm flex flex-col justify-between h-24
-                  ${!slot.available 
-                    ? 'opacity-50 bg-gray-100 border-gray-200 cursor-not-allowed' 
-                    : 'bg-white border-gray-100 active:border-[#5A5A40] active:bg-[#fcfcf9]'}
-                `}
-              >
+            {[...slots]
+              .sort((a, b) => {
+                if (!sortByTraffic) return 0; // Keep chronological
+                const trafficOrder = { low: 0, medium: 1, high: 2 };
+                return trafficOrder[a.traffic] - trafficOrder[b.traffic];
+              })
+              .map((slot) => (
+                <motion.button
+                  layout
+                  key={slot.time}
+                  disabled={!slot.available}
+                  whileTap={slot.available ? { scale: 0.98 } : {}}
+                  onClick={() => handleSlotClick(slot)}
+                  className={`
+                    relative p-4 rounded-xl border text-left transition-all shadow-sm flex flex-col justify-between h-24
+                    ${!slot.available 
+                      ? 'opacity-50 bg-gray-100 border-gray-200 cursor-not-allowed' 
+                      : slot.traffic === 'low' && sortByTraffic
+                        ? 'bg-emerald-50 border-emerald-200 ring-1 ring-emerald-100'
+                        : 'bg-white border-gray-100 active:border-[#5A5A40] active:bg-[#fcfcf9]'}
+                  `}
+                >
                 <div className="flex justify-between items-start w-full">
                   <span className="text-xl font-semibold tracking-tight">{slot.time}</span>
                   <MessageCircle size={18} className="text-[#25D366]" />
