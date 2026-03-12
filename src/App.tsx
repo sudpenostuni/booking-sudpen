@@ -61,7 +61,7 @@ export default function App() {
         // Traffic logic
         let traffic: 'low' | 'medium' | 'high' = 'low';
         
-        if (hour >= 8 && hour < 12) traffic = 'high';
+        if (hour >= 9 && hour < 12) traffic = 'high';
         else if (hour >= 12 && hour < 13) traffic = 'medium';
         else if (hour >= 16 && hour < 18) traffic = 'high';
         else if (hour >= 18 && hour < 19) traffic = 'medium';
@@ -87,11 +87,11 @@ export default function App() {
     // Sunday: Closed
     if (dayOfWeek === 0) return [];
     
-    // Saturday: Morning only (08:00 - 13:00)
-    if (dayOfWeek === 6) return generateTimeSlots(8, 0, 13, 0);
+    // Saturday: Morning only (09:00 - 13:00)
+    if (dayOfWeek === 6) return generateTimeSlots(9, 0, 13, 0);
     
-    // Mon-Fri: Morning (08:00 - 13:00) + Afternoon (16:30 - 20:00)
-    const morning = generateTimeSlots(8, 0, 13, 0);
+    // Mon-Fri: Morning (09:00 - 13:00) + Afternoon (16:30 - 20:00)
+    const morning = generateTimeSlots(9, 0, 13, 0);
     const afternoon = generateTimeSlots(16, 30, 20, 0);
     return [...morning, ...afternoon];
   };
